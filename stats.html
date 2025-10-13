@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抽选统计</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="icon.png">
+    <link rel="stylesheet" href="stats.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <div class="main-content">
+            <div class="stats-header">
+                <h1 style="text-align: center;">统计信息</h1>
+                <div id="tabsContainer" class="tabs-container"></div>
+            </div>
+            <div id="topThreeContainer" class="top-three-container"></div>
+            <div class="ranking-list-container">
+                <ul id="rankingList" class="ranking-list"></ul>
+            </div>
+            <div id="noDataMessage"
+                style="display: none; flex-grow:1; display:flex; align-items:center; justify-content:center;">暂无任何统计记录
+            </div>
+            <div class="footer-controls">
+                <button class="control-btn" id="footerBtn">关闭</button>
+            </div>
+        </div>
+    </div>
+    <div class="window-controls" style="display: none;">
+        <button class="window-control-btn" id="closeBtn">✕</button>
+    </div>
+
+    <script src="stats.js"></script>
+</body>
+
+</html>

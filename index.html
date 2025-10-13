@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">随机抽取</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="icon.png">
+</head>
+
+<body>
+    <div class="app-container" id="appContainer">
+        <div class="main-content" id="mainContent">
+            <h1 style="margin-bottom: 20px; margin-top: 38px;" id="mainTitle">随机抽取</h1>
+
+            <div class="preset-controls" style="-webkit-app-region: no-drag;">
+                 <div id="presetButtonsContainer" class="preset-buttons-container"></div>
+                 <button class="sidebar-toggle" id="sidebarToggle" title="Settings">⚙️</button>
+            </div>
+
+
+            <div class="wheel-container" style="-webkit-app-region: no-drag;">
+                <canvas id="wheelCanvas" width="1024" height="1024"></canvas>
+            </div>
+
+            <div class="spin-buttons-container" id="spinButtonsContainer" style="-webkit-app-region: no-drag;">
+                <button class="spin-button" id="spinOneButton">🎲 抽一个</button>
+                <button class="spin-button" id="spinMultipleButton">➕ 抽多个</button>
+            </div>
+
+            <div class="winner-display" id="winnerDisplay"></div>
+        </div>
+
+        <div class="sidebar" id="sidebar" style="-webkit-app-region: no-drag;">
+            <h2>⚙️ 设置</h2>
+            <button class="sidebar-close-btn" onclick="wheel.toggleSidebar();">✖️</button>
+
+            <div class="control-group">
+                <label for="titleInput">页面标题:</label>
+                <input type="text" class="title-input" id="titleInput" value="随机抽取" autocomplete="off">
+            </div>
+
+            <div class="control-group">
+                <label for="namesInput">输入项目 (每行一个):</label>
+                <textarea class="names-input" id="namesInput" placeholder="项目1&#10;项目2&#10;项目3" autocomplete="off"></textarea>
+            </div>
+
+            <div class="control-buttons">
+                <button class="control-btn" onclick="window.shuffleNames()">🔀 随机</button>
+                <button class="control-btn" onclick="window.clearNames()">🗑️ 清空</button>
+                <button class="control-btn" id="savePresetBtn">💾 保存预设</button>
+                <button class="control-btn" id="viewStatsBtn">📊 查看统计</button>
+            </div>
+
+            <div class="control-group">
+                <label>旋转设置:</label>
+                <div class="setting-item">
+                    <label for="spinDamping">旋转阻尼: <span id="dampingValue">0.9815</span></label>
+                    <input type="range" id="spinDamping" min="0.75" max="0.999" value="0.9815" step="0.002">
+                </div>
+
+                <div class="setting-item">
+                    <label for="spinSpeed">旋转系数: <span id="speedValue">14</span>倍率</label>
+                    <input type="range" id="spinSpeed" min="2" max="18" value="14" step="1">
+                </div>
+
+                <div class="setting-item">
+                    <label for="spinSoundVolume">旋转音效大小: <span id="spinSoundVolumeValue">10</span></label>
+                    <input type="range" id="spinSoundVolume" min="0" max="10" value="10" step="1">
+                </div>
+            </div>
+             <div class="control-group">
+                <label for="canvasResolution">Canvas 分辨率: <span id="canvasResolutionValue">1024x1024</span></label>
+                <input type="range" id="canvasResolution" min="512" max="1024" value="1024" step="16">
+                </div>
+
+
+            <div class="control-group">
+                <label>抽取选项:</label>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="removeWinner">
+                        抽中后移除名单
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label>结果显示方式:</label>
+                    <div style="margin-top: 10px;">
+                        <label><input type="radio" name="displayMode" value="inline"> 在转盘下方显示</label>
+                        <label><input type="radio" name="displayMode" value="modal" checked> 弹窗显示</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>界面设置:</label>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="darkModeToggle">
+                        深色模式
+                    </label>
+                </div>
+            </div>
+
+            <div id="electronSettings" style="display: none;">
+                 <div class="control-group">
+                    <label>常规:</label>
+                    <div class="setting-item">
+                        <label><input type="checkbox" id="autoStart"> 开机自启动</label>
+                    </div>
+                    <div class="setting-item">
+                        <label><input type="checkbox" id="enableFloatBall"> 启用悬浮球</label>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label>悬浮球:</label>
+                     <div class="setting-item">
+                        <label>背景类型:</label>
+                        <div style="margin-top: 10px;">
+                            <label><input type="radio" name="floatBallBackground" value="color" checked> 自定义颜色</label>
+                            <label><input type="radio" name="floatBallBackground" value="image"> 默认Logo</label>
+                        </div>
+                    </div>
+                     <div class="setting-item">
+                        <label>背景颜色:</label>
+                        <input type="color" id="floatBallColor" value="#000000">
+                    </div>
+                     <div class="setting-item">
+                        <label>透明度: <span id="floatBallOpacityValue">0.4</span></label>
+                        <input type="range" id="floatBallOpacity" min="0.1" max="1" value="0.4" step="0.1">
+                    </div>
+                    <div class="setting-item">
+                        <label>显示文本:</label>
+                        <input type="text" class="title-input" id="floatBallText" value="Ball">
+                    </div>
+                    <div class="setting-item">
+                        <label>字体大小 (vh): <span id="floatBallFontSizeValue">40</span></label>
+                        <input type="range" id="floatBallFontSize" min="10" max="50" value="40" step="1">
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label>应用信息:</label>
+                    <div class="setting-item">
+                        <button class="control-btn" id="checkForUpdatesBtn">检查更新</button>
+                    </div>
+                    <div class="setting-item">
+                        <label>当前版本: <span id="appVersion"></span></label>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="history">
+                <h4>📋 抽取记录</h4>
+                <div id="historyList">
+                    <div class="history-item">暂无记录</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="winnerModal" class="modal" style="-webkit-app-region: no-drag;">
+        <div class="modal-content">
+            <h2 style="display: none;">🎉 恭喜！</h2>
+            <div class="modal-winner" id="modalWinner"></div>
+            <button class="modal-close" id="closeModalButton">确定</button>
+        </div>
+    </div>
+
+    <div id="customModal" class="modal" style="-webkit-app-region: no-drag;">
+        <div class="modal-content">
+            <h2 id="customModalTitle"></h2>
+            <p id="customModalMessage"></p>
+            <input type="text" id="customModalInput" class="modal-input" style="display: none;">
+            <div class="modal-buttons">
+                <button class="modal-button" id="customModalConfirm">确定</button>
+                <button class="modal-button" id="customModalCancel" style="display: none;">取消</button>
+            </div>
+        </div>
+    </div>
+    <div class="window-controls" style="-webkit-app-region: no-drag;">
+        <button class="window-control-btn" id="closeBtn">✕</button>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>

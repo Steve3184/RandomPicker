@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>检查更新</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: rgba(0, 0, 0, 0);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            -webkit-app-region: drag;
+            color: #333;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        body.dark-mode {
+            color: #e0e0e0;
+        }
+        .updater-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            color: #333;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        body.dark-mode .updater-container {
+            background: #3a3a3a;
+            color: #e0e0e0;
+        }
+        #message {
+            margin-bottom: 20px;
+            font-size: 16px;
+            color: #555;
+            transition: color 0.3s ease;
+        }
+        body.dark-mode #message {
+            color: #ccc;
+        }
+        #progress-bar-container {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            display: none;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+        body.dark-mode #progress-bar-container {
+            background-color: #555;
+        }
+        #progress-bar {
+            width: 0%;
+            height: 25px;
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            border-radius: 5px;
+            text-align: center;
+            line-height: 25px;
+            color: white;
+            font-weight: bold;
+            transition: width 0.3s ease, background 0.3s ease;
+        }
+        body.dark-mode #progress-bar {
+            background: linear-gradient(145deg, #6a6a6a, #4a4a4a);
+        }
+        .control-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            -webkit-app-region: no-drag;
+        }
+        .updater-button {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease, background 0.3s ease, color 0.3s ease;
+        }
+        #update-btn, #restart-btn {
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+        }
+        body.dark-mode #update-btn, body.dark-mode #restart-btn {
+            background: linear-gradient(145deg, #6a6a6a, #4a4a4a);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        #update-btn:hover, #restart-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(102, 126, 234, 0.5);
+        }
+        #close-btn {
+            background: #e0e0e0;
+            color: #333;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        body.dark-mode #close-btn {
+            background: #555;
+            color: #e0e0e0;
+        }
+        #close-btn:hover {
+            transform: translateY(-2px);
+            background: #d0d0d0;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+        }
+        .setting-item {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #555;
+            -webkit-app-region: no-drag;
+            transition: color 0.3s ease;
+        }
+        body.dark-mode .setting-item {
+            color: #ccc;
+        }
+        .setting-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+        .version-info {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #777;
+            transition: color 0.3s ease;
+        }
+        body.dark-mode .version-info {
+            color: #aaa;
+        }
+        .version-info span {
+            font-weight: bold;
+            color: #333;
+            transition: color 0.3s ease;
+        }
+        body.dark-mode .version-info span {
+            color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="updater-container">
+        <div id="message">正在检查更新...</div>
+        <div id="current-version" class="version-info">当前版本: <span></span></div>
+        <div id="latest-version" class="version-info" style="display: none;">最新版本: <span></span></div>
+        <div id="progress-bar-container">
+            <div id="progress-bar">0%</div>
+        </div>
+        <div class="control-buttons" id="controls">
+            <button class="updater-button" id="update-btn" style="display: none;">立即更新</button>
+            <button class="updater-button" id="restart-btn" style="display: none;">重启并安装</button>
+            <button class="updater-button" id="close-btn">关闭</button>
+        </div>
+        <div class="setting-item">
+            <label>
+                <input type="checkbox" id="autoCheckUpdate"> 启动时自动检查更新
+            </label>
+        </div>
+    </div>
+
+    <script>
+        const message = document.getElementById('message');
+        const currentVersionSpan = document.querySelector('#current-version span');
+        const latestVersionDiv = document.getElementById('latest-version');
+        const latestVersionSpan = document.querySelector('#latest-version span');
+        const updateBtn = document.getElementById('update-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const closeBtn = document.getElementById('close-btn');
+        const progressBarContainer = document.getElementById('progress-bar-container');
+        const progressBar = document.getElementById('progress-bar');
+        const autoCheckUpdateCheckbox = document.getElementById('autoCheckUpdate');
+        window.electronAPI.getSettings().then(settings => {
+            if (settings.darkMode) {
+                document.body.classList.add('dark-mode');
+            }
+        });
+        window.electronAPI.getCurrentVersion().then(version => {
+            currentVersionSpan.innerText = version;
+        });
+        window.electronAPI.getSettings().then(settings => {
+            autoCheckUpdateCheckbox.checked = settings.autoCheckUpdate !== false;
+        });
+        autoCheckUpdateCheckbox.addEventListener('change', () => {
+            window.electronAPI.saveSettings({ autoCheckUpdate: autoCheckUpdateCheckbox.checked });
+        });
+        window.electronAPI.onUpdateAvailable((info) => {
+            message.innerText = `发现新版本: ${info.version}`;
+            latestVersionSpan.innerText = info.version;
+            latestVersionDiv.style.display = 'block';
+            updateBtn.style.display = 'inline-block';
+        });
+        window.electronAPI.onUpdateNotAvailable((info) => {
+            message.innerText = '当前已是最新版本。';
+            latestVersionDiv.style.display = 'none';
+        });
+        window.electronAPI.onUpdateError((err) => {
+            message.innerText = `更新出错: ${err.message}`;
+            latestVersionDiv.style.display = 'none';
+        });
+        window.electronAPI.onDownloadProgress((progressObj) => {
+            const percent = Math.floor(progressObj.percent);
+            progressBarContainer.style.display = 'block';
+            progressBar.style.width = `${percent}%`;
+            progressBar.innerText = `${percent}%`;
+            message.innerText = '正在下载更新...';
+        });
+        window.electronAPI.onUpdateDownloaded((info) => {
+            message.innerText = '更新下载完成，重启应用以安装。';
+            updateBtn.style.display = 'none';
+            restartBtn.style.display = 'inline-block';
+        });
+        updateBtn.addEventListener('click', () => {
+            window.electronAPI.startDownload();
+        });
+        restartBtn.addEventListener('click', () => {
+            window.electronAPI.quitAndInstall();
+        });
+        closeBtn.addEventListener('click', () => {
+            window.electronAPI.closeUpdaterWindow();
+        });
+        window.addEventListener('DOMContentLoaded', () => {
+            window.electronAPI.checkUpdate();
+        });
+    </script>
+</body>
+</html>
