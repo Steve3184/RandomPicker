@@ -12,13 +12,31 @@ let tray;
 let ballDiameter;
 let updaterWindow;
 
-autoUpdater.setFeedURL({
-    provider: 'generic',
-    url: 'https://t.s3.fan/updater/top.steve3184.randompicker/'
-});
-
 const autoDownloadEnabled = store.get('autoCheckUpdate', true);
 autoUpdater.autoDownload = autoDownloadEnabled;
+
+function setUpdateURL() {
+    const updateServer = store.get('updateServer', 'https://cloud2.s3.fan:27777/updater/top.steve3184.randompicker');
+    const customUpdateServerUrl = store.get('customUpdateServerUrl', '');
+
+    let feedURL = '';
+    if (updateServer === 'custom') {
+        feedURL = customUpdateServerUrl;
+    } else {
+        feedURL = updateServer;
+    }
+
+    if (feedURL) {
+        console.log('settings feedurl:', feedURL);
+        autoUpdater.setFeedURL({
+            provider: 'generic',
+            url: feedURL
+        });
+    }
+}
+
+// Set the update URL on startup
+setUpdateURL();
 
 function createMainWindow(showOnStart = true) {
     const primaryDisplay = screen.getPrimaryDisplay();
@@ -367,6 +385,15 @@ ipcMain.on('close-main-window', () => {
         console.error('Error in close-main-window:', error);
     }
 });
+
+ipcMain.on('handle-float-ball-click', () => {
+    if (mainWindow && mainWindow.isVisible()) {
+        mainWindow.webContents.send('spin-from-float');
+    } else {
+        mainWindow.show();
+    }
+});
+
 ipcMain.on('open-main-window', () => {
     try {
         if (mainWindow) {
@@ -457,6 +484,9 @@ ipcMain.handle('get-settings', () => {
 ipcMain.on('save-settings', (event, settings) => {
     try {
         store.set(settings);
+        if (settings.updateServer || settings.customUpdateServerUrl) {
+            setUpdateURL();
+        }
     } catch (error) {
         console.error('Error in save-settings:', error, { settings });
     }

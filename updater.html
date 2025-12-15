@@ -163,6 +163,22 @@
             <button class="updater-button" id="close-btn">关闭</button>
         </div>
         <div class="setting-item">
+            <label>更新服务器:</label>
+            <div>
+                <input type="radio" id="server1" name="update-server" value="https://cloud2.s3.fan:27777/updater/top.steve3184.randompicker" checked>
+                <label for="server1">S3Cloud2</label>
+            </div>
+            <div>
+                <input type="radio" id="server2" name="update-server" value="https://data.s3.fan/updater/top.steve3184.randompicker">
+                <label for="server2">S3Data</label>
+            </div>
+            <div>
+                <input type="radio" id="custom" name="update-server" value="custom">
+                <label for="custom">自定义</label>
+                <input type="text" id="custom-server-url" placeholder="输入服务器地址" style="display: none; margin-left: 10px;">
+            </div>
+        </div>
+        <div class="setting-item">
             <label>
                 <input type="checkbox" id="autoCheckUpdate"> 启动时自动检查更新
             </label>
@@ -180,16 +196,58 @@
         const progressBarContainer = document.getElementById('progress-bar-container');
         const progressBar = document.getElementById('progress-bar');
         const autoCheckUpdateCheckbox = document.getElementById('autoCheckUpdate');
+
+        const serverRadios = document.querySelectorAll('input[name="update-server"]');
+        const customServerUrlInput = document.getElementById('custom-server-url');
+
+        function saveUpdateSettings() {
+            const selectedServer = document.querySelector('input[name="update-server"]:checked').value;
+            const customUrl = customServerUrlInput.value;
+            window.electronAPI.saveSettings({
+                updateServer: selectedServer,
+                customUpdateServerUrl: customUrl
+            });
+        }
+
+        serverRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                if (radio.value === 'custom') {
+                    customServerUrlInput.style.display = 'inline-block';
+                } else {
+                    customServerUrlInput.style.display = 'none';
+                }
+                saveUpdateSettings();
+            });
+        });
+
+        customServerUrlInput.addEventListener('input', saveUpdateSettings);
+
         window.electronAPI.getSettings().then(settings => {
             if (settings.darkMode) {
                 document.body.classList.add('dark-mode');
             }
+            autoCheckUpdateCheckbox.checked = settings.autoCheckUpdate !== false;
+
+            const updateServer = settings.updateServer || 'https://cloud2.s3.fan:37777/updater/top.steve3184.randompicker';
+            const customUpdateServerUrl = settings.customUpdateServerUrl || '';
+
+            customServerUrlInput.value = customUpdateServerUrl;
+
+            serverRadios.forEach(radio => {
+                if (radio.value === updateServer) {
+                    radio.checked = true;
+                }
+            });
+
+            if (updateServer === 'custom') {
+                customServerUrlInput.style.display = 'inline-block';
+            } else {
+                customServerUrlInput.style.display = 'none';
+            }
         });
+
         window.electronAPI.getCurrentVersion().then(version => {
             currentVersionSpan.innerText = version;
-        });
-        window.electronAPI.getSettings().then(settings => {
-            autoCheckUpdateCheckbox.checked = settings.autoCheckUpdate !== false;
         });
         autoCheckUpdateCheckbox.addEventListener('change', () => {
             window.electronAPI.saveSettings({ autoCheckUpdate: autoCheckUpdateCheckbox.checked });
@@ -201,7 +259,7 @@
             updateBtn.style.display = 'inline-block';
         });
         window.electronAPI.onUpdateNotAvailable((info) => {
-            message.innerText = '当前已是最新版本。';
+            message.innerText = '当前已是最新版本';
             latestVersionDiv.style.display = 'none';
         });
         window.electronAPI.onUpdateError((err) => {
@@ -216,7 +274,7 @@
             message.innerText = '正在下载更新...';
         });
         window.electronAPI.onUpdateDownloaded((info) => {
-            message.innerText = '更新下载完成，重启应用以安装。';
+            message.innerText = '更新下载完成，重启应用以安装';
             updateBtn.style.display = 'none';
             restartBtn.style.display = 'inline-block';
         });

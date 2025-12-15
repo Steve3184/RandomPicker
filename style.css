@@ -48,11 +48,14 @@ body.is-electron .app-container .main-content {
     background: rgb(255, 77, 77);
     color: white;
     border: none;
-    width: 30px;
-    height: 30px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 26px;
+    line-height: 40px;
+    text-align: center;
+    padding: 0;
     transition: background 0.2s ease;
 }
 

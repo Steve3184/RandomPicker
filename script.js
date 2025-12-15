@@ -30,6 +30,8 @@ class WheelOfNames {
         this.lastAngularVelocity = 0;
         this.errorDetected = false;
         this.currentPresetName = '';
+        this.targetMaxSpeed = 0;
+        this.lastSegmentIndex = -1;
 
         // this.colors = [
         //     '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
@@ -159,6 +161,9 @@ class WheelOfNames {
             document.getElementById('closeBtn').addEventListener('click', () => window.electronAPI.closeMainWindow());
             document.getElementById('checkForUpdatesBtn').addEventListener('click', () => {
                 window.electronAPI.openUpdaterWindow();
+            });
+            window.electronAPI.onSpinFromFloat(() => {
+                this.spin(1);
             });
         }
 
@@ -420,6 +425,8 @@ class WheelOfNames {
 
     spin(count = 1) {
         if (this.isSpinning) return;
+        this.closeModal();
+        document.getElementById('customModal').style.display = 'none';
         this.spinCount = count;
         this.winners = [];
         this.currentSpinIndex = 0;
@@ -463,14 +470,27 @@ class WheelOfNames {
         this.winnerDisplay.style.display = 'none';
         const spinDamping = parseFloat(document.getElementById('spinDamping').value);
         const spinSpeed = parseInt(document.getElementById('spinSpeed').value);
+
+        this.targetMaxSpeed = spinSpeed * 2 + Math.random() * 10;
+
         if (count > 1) {
             this.spinIntervals = [];
-            let tempAngularVelocity = Math.random() * 360 + spinSpeed * (Math.random() * 2) * 360;
+
             let frames = 0;
-            while (tempAngularVelocity > 0.01) {
-                tempAngularVelocity *= spinDamping;
+            let simAngularVelocity = 0;
+            const acceleration = 0.2;
+            const maxAngularVelocity = this.targetMaxSpeed;
+
+            while (simAngularVelocity < maxAngularVelocity) {
+                simAngularVelocity += acceleration;
                 frames++;
             }
+
+            while (simAngularVelocity > 0.01) {
+                simAngularVelocity *= spinDamping;
+                frames++;
+            }
+
             this.totalAnimationFrames = frames;
             console.log('Total animation frames:', this.totalAnimationFrames);
 
@@ -501,8 +521,13 @@ class WheelOfNames {
     startSpinAnimation(names) {
         const spinDamping = parseFloat(document.getElementById('spinDamping').value);
         const spinSpeed = parseInt(document.getElementById('spinSpeed').value);
-        let angularVelocity = Math.random() * 360 + spinSpeed * (Math.random() * 2) * 360;
-        console.log('start spin with angularVelocity:', angularVelocity);
+
+        let angularVelocity = 0;
+        let animationPhase = 'accelerating';
+        const acceleration = 0.4;
+        const maxAngularVelocity = this.targetMaxSpeed;
+
+        console.log('start spin with max target angularVelocity:', maxAngularVelocity);
 
         const animate = () => {
             if (this.errorDetected) {
@@ -511,7 +536,17 @@ class WheelOfNames {
             }
 
             this.currentAnimationFrame++;
-            angularVelocity *= spinDamping;
+
+            if (animationPhase === 'accelerating') {
+                angularVelocity += acceleration;
+                if (angularVelocity >= maxAngularVelocity) {
+                    angularVelocity = maxAngularVelocity;
+                    animationPhase = 'decelerating';
+                }
+            } else { // decelerating
+                angularVelocity *= spinDamping;
+            }
+
             this.currentRotation += angularVelocity;
 
             if (names.length > 0) {
@@ -538,7 +573,7 @@ class WheelOfNames {
                 }
             }
 
-            if (this.lastAngularVelocity > 0.01 && angularVelocity > this.lastAngularVelocity * 1.05) {
+            if (this.lastAngularVelocity > 0.01 && animationPhase === 'decelerating' && angularVelocity > this.lastAngularVelocity * 1.05) {
                 this.errorDetected = true;
                 cancelAnimationFrame(this.animationId);
                 alert(`转盘出现严重错误！速度异常增加！当前参数：当前速度: ${angularVelocity.toFixed(4)} 上次速度: ${this.lastAngularVelocity.toFixed(4)} 阻尼: ${spinDamping} 初始速度: ${spinSpeed} 旋转角度: ${this.currentRotation.toFixed(2)}`);
@@ -563,7 +598,7 @@ class WheelOfNames {
                     console.log(`Picked winner ${this.currentSpinIndex}: ${winner} at frame ${this.currentAnimationFrame}`);
                 }
             }
-            if (angularVelocity <= 0.01) {
+            if (angularVelocity <= 0.01 && animationPhase === 'decelerating') {
                 this.drawWheel();
                 setTimeout(() => { this.onSpinComplete(names) }, 400);
             } else {
@@ -690,6 +725,7 @@ class WheelOfNames {
         if (displayMode === 'modal') {
             document.getElementById('modalWinner').innerHTML = winnerText;
             document.getElementById('winnerModal').style.display = 'block';
+            this.triggerConfetti();
         } else {
             this.winnerDisplay.innerHTML = `🎉 ${winnerText} 🎉`;
             this.winnerDisplay.style.display = 'block';
@@ -701,6 +737,19 @@ class WheelOfNames {
 
     closeModal() {
         document.getElementById('winnerModal').style.display = 'none';
+    }
+
+    triggerConfetti() {
+        const confettiCanvas = document.getElementById('confettiCanvas');
+        const myConfetti = confetti.create(confettiCanvas, {
+            resize: true,
+            useWorker: true
+        });
+        myConfetti({
+            particleCount: 150,
+            spread: 180,
+            origin: { y: 0.6 }
+        });
     }
 
     addToHistory(winner) {
@@ -802,7 +851,7 @@ class WheelOfNames {
         const defaultSettings = {
             title: "随机抽取",
             names: "",
-            spinDamping: 0.924,
+            spinDamping: 0.985,
             spinSpeed: 8,
             spinSoundVolume: 10,
             canvasResolution: 1024,

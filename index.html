@@ -10,6 +10,7 @@
 </head>
 
 <body>
+    <canvas id="confettiCanvas" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; pointer-events: none;"></canvas>
     <div class="app-container" id="appContainer">
         <div class="main-content" id="mainContent">
             <h1 style="margin-bottom: 20px; margin-top: 38px;" id="mainTitle">随机抽取</h1>
@@ -183,6 +184,7 @@
         <button class="window-control-btn" id="closeBtn">✕</button>
     </div>
     <script src="script.js"></script>
+    <script src="confetti.browser.min.js"></script>
 </body>
 
 </html>
