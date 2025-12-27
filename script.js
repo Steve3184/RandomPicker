@@ -52,6 +52,11 @@ class WheelOfNames {
         this.initEventListeners();
         this.loadSettings();
         this.checkQueryParams();
+        this.frameWinners = [];
+        this.liveWinnerElement = document.getElementById('liveCumulativeWinners') || document.getElementById('winnerDisplay');
+        if (this.liveWinnerElement) {
+            this.liveWinnerElement.textContent = '';
+        }
         setTimeout(() => { this.drawWheel(); }, 1);
     }
 
@@ -473,36 +478,44 @@ class WheelOfNames {
 
         this.targetMaxSpeed = spinSpeed * 2 + Math.random() * 10;
 
-        if (count > 1) {
-            this.spinIntervals = [];
+        this.spinIntervals = [];
+        this.frameWinners = [];
+        let frames = 0;
+        let simAngularVelocity = 0;
+        const acceleration = 0.4;
+        const maxAngularVelocity = this.targetMaxSpeed;
+        let simRotation = this.currentRotation;
 
-            let frames = 0;
-            let simAngularVelocity = 0;
-            const acceleration = 0.2;
-            const maxAngularVelocity = this.targetMaxSpeed;
-
-            while (simAngularVelocity < maxAngularVelocity) {
-                simAngularVelocity += acceleration;
-                frames++;
-            }
-
-            while (simAngularVelocity > 0.01) {
-                simAngularVelocity *= spinDamping;
-                frames++;
-            }
-
-            this.totalAnimationFrames = frames;
-            console.log('Total animation frames:', this.totalAnimationFrames);
-
-            const frameInterval = Math.floor(this.totalAnimationFrames / count);
-            for (let i = 0; i < count; i++) {
-                this.spinIntervals.push((i + 1) * frameInterval);
-            }
-            console.log('Spin intervals (frames):', this.spinIntervals);
-        } else {
-            this.spinIntervals = [];
-            this.totalAnimationFrames = 0;
+        while (simAngularVelocity < maxAngularVelocity) {
+            simAngularVelocity += acceleration;
+            simRotation += simAngularVelocity;
+            const anglePerSegment = names.length > 0 ? 360 / names.length : 360;
+            const normalizedAngle = (360 - (simRotation % 360)) % 360;
+            const winnerIndex = names.length > 0 ? Math.floor(normalizedAngle / anglePerSegment) : -1;
+            this.frameWinners.push(winnerIndex);
+            frames++;
         }
+
+        while (simAngularVelocity > 0.01) {
+            simAngularVelocity *= spinDamping;
+            simRotation += simAngularVelocity;
+            const anglePerSegment = names.length > 0 ? 360 / names.length : 360;
+            const normalizedAngle = (360 - (simRotation % 360)) % 360;
+            const winnerIndex = names.length > 0 ? Math.floor(normalizedAngle / anglePerSegment) : -1;
+            this.frameWinners.push(winnerIndex);
+            frames++;
+        }
+
+        this.totalAnimationFrames = frames;
+        console.log('Total animation frames:', this.totalAnimationFrames);
+
+        if (this.totalAnimationFrames > 0) {
+            const frameInterval = Math.floor(this.totalAnimationFrames / Math.max(1, count));
+            for (let i = 0; i < count; i++) {
+                this.spinIntervals.push(Math.min((i + 1) * frameInterval, this.totalAnimationFrames - 1));
+            }
+        }
+        console.log('Spin intervals (frames):', this.spinIntervals);
 
         this.currentAnimationFrame = 0;
         this.animationStartTime = performance.now();
@@ -591,6 +604,12 @@ class WheelOfNames {
                     const winner = names[winnerIndex];
                     this.winners.push(winner);
 
+                    const live = document.getElementById('liveCumulativeWinners') || this.winnerDisplay;
+                    if (live) {
+                        const existing = live.textContent.trim();
+                        live.textContent = existing ? `${existing}, ${winner}` : winner;
+                    }
+
                     if (document.getElementById('removeWinner').checked) {
                         this.removeWinnerFromList(winner);
                     }
@@ -624,39 +643,49 @@ class WheelOfNames {
         }
 
         if (this.spinCount > 1) {
-            let finalWinners = [];
-            let usedBackupWinners = new Set();
-            let isLess = this.winners.length < this.spinCount;
+            const finalWinners = [];
+            const used = new Set();
+            const availableBackups = Array.isArray(this.backupWinners) ? this.backupWinners.slice() : [];
+            const allNames = this.getNames();
+
             for (let i = 0; i < this.winners.length; i++) {
-                let currentWinner = this.winners[i];
-                let isDuplicate = finalWinners.includes(currentWinner);
-                if (isLess) isDuplicate == true;
-                if (isDuplicate) {
-                    let replaced = false;
-                    for (let j = 0; j < this.backupWinners.length; j++) {
-                        const backup = this.backupWinners[j];
-                        if (!finalWinners.includes(backup) && !usedBackupWinners.has(backup)) {
-                            finalWinners.push(backup);
-                            usedBackupWinners.add(backup);
-                            console.log(`replaced "${currentWinner}" x2 with "${backup}"`);
-                            replaced = true;
-                            break;
-                        }
+                const currentWinner = this.winners[i];
+                if (!used.has(currentWinner)) {
+                    finalWinners.push(currentWinner);
+                    used.add(currentWinner);
+                    continue;
+                }
+
+                let replaced = null;
+                while (availableBackups.length) {
+                    const b = availableBackups.shift();
+                    if (!used.has(b)) {
+                        replaced = b;
+                        break;
                     }
-                    if (isLess) replaced = false;
-                    if (!replaced) {
-                        finalWinners.push(currentWinner);
-                        console.log(`replace object "${currentWinner}" failed!`);
-                        if (isLess) isLess = false;
+                }
+
+                if (!replaced) {
+                    const candidates = allNames.filter(n => !used.has(n) && !finalWinners.includes(n));
+                    if (candidates.length > 0) {
+                        replaced = candidates[Math.floor(Math.random() * candidates.length)];
                     }
+                }
+
+                if (replaced) {
+                    finalWinners.push(replaced);
+                    used.add(replaced);
+                    console.log(`replaced duplicate "${currentWinner}" with "${replaced}"`);
                 } else {
                     finalWinners.push(currentWinner);
                 }
             }
+
             this.winners = finalWinners;
-            this.winners.forEach((a) => {this.addToHistory(a);});
+            this.winners.forEach((a) => { this.addToHistory(a); });
         }
 
+        if (this.liveWinnerElement) this.liveWinnerElement.textContent = '';
         this.showWinner(this.winners);
         this.isSpinning = false;
 
@@ -851,7 +880,7 @@ class WheelOfNames {
         const defaultSettings = {
             title: "随机抽取",
             names: "",
-            spinDamping: 0.985,
+            spinDamping: 0.878,
             spinSpeed: 8,
             spinSoundVolume: 10,
             canvasResolution: 1024,
@@ -1104,7 +1133,7 @@ let wheel;
 function updateWheelSize(a = 380) {
     const maxSize = Math.max(Math.min(window.innerHeight, window.innerWidth) - a, 350);
     wheel.canvas.style.width = maxSize + 'px';
-    wheel.canvas.style.height = maxSize + 'px';
+    // wheel.canvas.style.height = maxSize + 'px';
 }
 
 window.addEventListener('load', () => {

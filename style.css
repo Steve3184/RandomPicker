@@ -55,6 +55,7 @@ body.is-electron .app-container .main-content {
     font-size: 26px;
     line-height: 40px;
     text-align: center;
+    font-weight: bolder;
     padding: 0;
     transition: background 0.2s ease;
 }
@@ -603,4 +604,11 @@ body.dark-mode #customModalMessage {
     transform: translateY(-2px);
     background: #d0d0d0;
     box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+}
+
+.live-cumulative {
+    margin-top: 12px;
+    font-size: 18px;
+    text-align: center;
+    min-height: 28px;
 }

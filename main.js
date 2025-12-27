@@ -43,6 +43,7 @@ function createMainWindow(showOnStart = true) {
     const { width, height } = primaryDisplay.workAreaSize;
     const windowSize = Math.min(Math.round(height * 0.75), 640);
     const savedPosition = store.get('mainWindowPosition');
+    const isDisplayInline = store.get('displayMode') == 'inline';
     let x, y;
 
     if (savedPosition) {
@@ -55,7 +56,7 @@ function createMainWindow(showOnStart = true) {
     console.log('create main on pos: x',x,',y',y);
     mainWindow = new BrowserWindow({
         width: windowSize * 0.9,
-        height: windowSize,
+        height: isDisplayInline ? windowSize + 90 : windowSize,
         x: x,
         y: y,
         minWidth: 576,
